@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archive Downloader Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { 
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f6f8fc 0%, #e9edf5 100%);
+    }
+    .gradient-bg { 
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.15);
+    }
+    .card-hover { 
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+    }
+    .card-hover:hover { 
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+      border-color: rgba(79, 70, 229, 0.2);
+    }
+    .progress-bar { 
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+      transition: width 0.3s ease;
+    }
+    .glass { 
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .table-container { 
+      max-height: 500px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(79, 70, 229, 0.5) transparent;
+    }
+    .table-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background-color: rgba(79, 70, 229, 0.5);
+      border-radius: 3px;
+    }
+    .chart-container { 
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    .select2-container {
+      width: 100% !important;
+    }
+    .select2-container--default .select2-selection--multiple {
+      border-color: #e5e7eb;
+      border-radius: 0.5rem;
+      min-height: 42px;
+    }
+    .loading-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite linear;
+      z-index: 9999;
+    }
+    .bottom-progress-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid rgba(79, 70, 229, 0.2);
+      padding: 0.75rem 1.5rem;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      z-index: 50;
+      box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .bottom-progress-bar.show {
+      transform: translateY(0);
+    }
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      transition: width 0.3s ease;
+    }
+    .minimize-btn {
+      position: absolute;
+      top: -12px;
+      right: 12px;
+      background: white;
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .minimize-btn:hover {
+      background: #4f46e5;
+      color: white;
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+    }
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: #4f46e5;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .url-input-container {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: 1rem;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+    .url-input-container:focus-within {
+      border-color: #4f46e5;
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.15);
+    }
+    .media-player {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 520px;
+      height: 440px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      transition: transform 0.3s ease;
+      transform: translateY(calc(100% + 20px));
+      overflow: auto;
+    }
+    .media-player.show {
+      transform: translateY(-40px);
+    }
+    .media-player-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 25px;
+      background: #4F46E5;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+      z-index: 1001;
+      transition: all 0.3s ease;
+    }
+    .media-player-toggle:hover {
+      transform: scale(1.1);
+    }
+    .media-player-header {
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .media-player-content {
+      height: calc(100% - 45px);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #aaaaaa85;
+    }
+    .media-player-content img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .media-player-content video,
+    .media-player-content audio {
+      width: 100%;
+      max-height: 100%;
+    }
+    .media-player-content audio {
+      margin: 20px;
+    }
+    .media-type-icon {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-download text-2xl"></i>
+          <h1 class="text-2xl font-bold">Archive Downloader Pro</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="glass rounded-lg px-4 py-2">
+            <span class="text-sm opacity-90">Live Status</span>
+            <div class="flex items-center space-x-2 mt-1">
+              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span class="text-sm font-medium" id="liveStatus">Ready</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-6 py-8">
+    <!-- Dashboard Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Total Files</p>
+            <p class="text-3xl font-bold text-gray-900" id="totalFiles">0</p>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-full">
+            <i class="fas fa-file text-blue-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Total Size</p>
+            <p class="text-3xl font-bold text-gray-900" id="totalSize">0 B</p>
+          </div>
+          <div class="bg-green-100 p-3 rounded-full">
+            <i class="fas fa-hdd text-green-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Largest File</p>
+            <p class="text-lg font-bold text-gray-900" id="largestFile">None</p>
+            <p class="text-sm text-gray-500" id="largestFileSize">0 B</p>
+          </div>
+          <div class="bg-purple-100 p-3 rounded-full">
+            <i class="fas fa-crown text-purple-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm font-medium">Last Update</p>
+            <p class="text-lg font-bold text-gray-900" id="lastUpdate">Never</p>
+          </div>
+          <div class="bg-orange-100 p-3 rounded-full">
+            <i class="fas fa-clock text-orange-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart and Files Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+      <!-- File Extensions Chart -->
+      <div class="lg:col-span-4 bg-white rounded-xl shadow-lg p-6 card-hover">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">File Extensions</h3>
+        <div class="chart-container">
+          <canvas id="extensionsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Downloaded Files Table -->
+      <div class="lg:col-span-8 bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-folder-open mr-2 text-indigo-600"></i>Downloaded Files
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            <input type="text" id="downloadedSearchInput" placeholder="Search downloaded files..." 
+                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+            <button id="refreshFiles" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm">
+              <i class="fas fa-sync-alt mr-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Downloaded Files Table -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+          <div class="table-container">
+            <table class="w-full">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modified</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="downloadedFilesBody" class="bg-white divide-y divide-gray-200">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- URL Input Section -->
+    <div class="url-input-container p-6 mb-8">
+      <h3 class="text-xl font-semibold text-gray-900 mb-6">Download New Files</h3>
+      <form id="urlForm" class="space-y-6">
+        <div class="relative">
+          <label for="itemUrl" class="block text-sm font-medium text-gray-700 mb-2">Archive.org Item URL</label>
+          <div class="flex gap-4">
+            <div class="flex-1 relative">
+              <i class="fas fa-link absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <input
+                type="url"
+                id="itemUrl"
+                placeholder="https://archive.org/details/your-item-identifier"
+                required
+                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+            </div>
+            <button
+              type="submit"
+              class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-xl"
+              id="fetchBtn"
+            >
+              <i class="fas fa-search mr-2"></i>Fetch Files
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Loading Progress Bar -->
+    <div id="loadingProgress" class="hidden">
+      <div class="loading-bar"></div>
+    </div>
+
+    <!-- Add the new bottom progress bar -->
+    <div id="bottomProgressBar" class="bottom-progress-bar">
+      <button class="minimize-btn" id="minimizeProgress">
+        <i class="fas fa-minus"></i>
+      </button>
+      <div class="flex flex-col space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center space-x-4">
+            <span class="font-medium text-gray-700" id="currentOperation">Processing...</span>
+            <span class="text-gray-500" id="currentFile">No file</span>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="text-gray-500" id="progressStats">0/0 files</span>
+            <span class="font-medium text-indigo-600" id="progressPercent">0%</span>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Selection Section -->
+    <div id="fileSelection" class="bg-white rounded-xl shadow-lg p-6 mb-8 hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
+        <h3 class="text-lg font-semibold text-gray-900">Select Files to Download</h3>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm text-gray-500" id="totalFilesCount">0 files total</span>
+          <button id="selectAllBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm">
+            <i class="fas fa-check-double mr-1"></i>Select All
+          </button>
+          <button id="deselectAllBtn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all text-sm">
+            <i class="fas fa-times mr-1"></i>Deselect All
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Extension</label>
+          <select id="extensionFilter" class="select2-multiple" multiple="multiple">
+            <option value="">All Extensions</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search Files</label>
+          <input type="text" id="searchInput" placeholder="Search by filename..." 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          <select id="sortSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+            <option value="name">Name</option>
+            <option value="size">Size</option>
+            <option value="extension">Extension</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Files Table -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <div class="table-container">
+          <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <input type="checkbox" id="selectAllCheckbox" class="rounded">
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody id="fileTableBody" class="bg-white divide-y divide-gray-200">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4">
+        <div class="text-sm text-gray-500">
+          Showing <span id="showingStart">0</span> to <span id="showingEnd">0</span> of <span id="totalCount">0</span> files
+        </div>
+        <div class="flex space-x-2">
+          <button id="prevPage" class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50" disabled>
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo" class="px-3 py-1 text-sm text-gray-700">Page 1 of 1</span>
+          <button id="nextPage" class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50" disabled>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div class="text-sm text-gray-500">
+          <span id="selectedCount">0</span> files selected
+          <span class="ml-4 text-xs">(<span id="selectedSize">0 B</span> total)</span>
+        </div>
+    <button
+      id="downloadBtn"
+          class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+          <i class="fas fa-download mr-2"></i>Download Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-8 mt-12">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center space-x-3 mb-4 md:mb-0">
+          <i class="fas fa-download text-xl"></i>
+          <span class="text-lg font-semibold">Archive Downloader Pro</span>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+          <span class="flex items-center">
+            <i class="fas fa-heart text-red-500 mr-1"></i>
+            Made with love
+          </span>
+          <span class="flex items-center">
+            <i class="fas fa-code mr-1"></i>
+            Open Source
+          </span>
+          <span class="flex items-center">
+            <i class="fas fa-shield-alt mr-1"></i>
+            Secure
+          </span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Add media player -->
+  <div class="media-player" id="mediaPlayer">
+    <div class="media-player-header">
+      <div class="flex items-center">
+        <span class="media-type-icon">
+          <i class="fas fa-play-circle"></i>
+        </span>
+        <span class="font-medium ml-6" id="mediaTitle">Media Preview</span>
+      </div>
+      <button id="closeMediaPlayer" class="text-gray-500 hover:text-gray-700">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="media-player-content" id="mediaContent">
+      <!-- Content will be dynamically inserted here -->
+    </div>
+  </div>
+
+  <div class="media-player-toggle" id="mediaPlayerToggle">
+    <i class="fas fa-photo-video"></i>
+  </div>
+
+  <script>
+    // Global variables
+    let availableFiles = [];
+    let filteredAvailableFiles = [];
+    let downloadedFiles = [];
+    let filteredDownloadedFiles = [];
+    let extensionsChart = null;
+    let refreshInterval = null;
+    let isLoading = false;
+    
+    // Pagination
+    const ITEMS_PER_PAGE = 50;
+    let currentPage = 1;
+    
+    // Debounce utility
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      loadDashboardStats();
+      startLiveUpdates();
+      setupEventListeners();
+    });
+
+    // Utility functions
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatDate(timestamp) {
+      return new Date(timestamp).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getFileIcon(extension) {
+      const icons = {
+        '.mp3': 'fas fa-music text-purple-600',
+        '.wav': 'fas fa-music text-purple-600',
+        '.mp4': 'fas fa-video text-red-600',
+        '.webm': 'fas fa-video text-red-600',
+        '.ogg': 'fas fa-video text-red-600',
+        '.jpg': 'fas fa-image text-blue-600',
+        '.jpeg': 'fas fa-image text-blue-600',
+        '.png': 'fas fa-image text-blue-600',
+        '.gif': 'fas fa-image text-blue-600',
+        '.pdf': 'fas fa-file-pdf text-red-600',
+        '.zip': 'fas fa-file-archive text-yellow-600',
+        '.rar': 'fas fa-file-archive text-yellow-600',
+        '.txt': 'fas fa-file-alt text-gray-600',
+        'no extension': 'fas fa-file text-gray-600'
+      };
+      return icons[extension.toLowerCase()] || 'fas fa-file text-gray-600';
+    }
+
+    // Dashboard functions
+    async function loadDashboardStats() {
+      if (isLoading) return;
+      
+      try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        
+        updateDashboardUI(stats);
+        updateExtensionsChart(stats.extensionCounts);
+        downloadedFiles = stats.files || [];
+        applyDownloadedFilesFilter();
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+      }
+    }
+
+    function updateDashboardUI(stats) {
+      document.getElementById('totalFiles').textContent = stats.totalFiles || 0;
+      document.getElementById('totalSize').textContent = formatBytes(stats.totalSize || 0);
+      
+      if (stats.largestFile && stats.largestFile.name) {
+        document.getElementById('largestFile').textContent = stats.largestFile.name;
+        document.getElementById('largestFileSize').textContent = formatBytes(stats.largestFile.size);
+      }
+      
+      if (stats.lastUpdate) {
+        document.getElementById('lastUpdate').textContent = formatDate(stats.lastUpdate);
+      }
+    }
+
+    // Modify chart update logic to prevent infinite reloads
+    let lastChartUpdate = 0;
+    const CHART_UPDATE_INTERVAL = 10000; // 10 seconds
+
+    function updateExtensionsChart(extensionCounts) {
+      const now = Date.now();
+      if (now - lastChartUpdate < CHART_UPDATE_INTERVAL) {
+        return;
+      }
+      lastChartUpdate = now;
+      
+      const ctx = document.getElementById('extensionsChart').getContext('2d');
+      
+      if (extensionsChart) {
+        extensionsChart.destroy();
+      }
+
+      if (!extensionCounts || Object.keys(extensionCounts).length === 0) {
+        return;
+      }
+
+      const labels = Object.keys(extensionCounts).map(ext => 
+        ext === 'no extension' ? 'No Ext' : ext.replace('.', '').toUpperCase()
+      );
+      const data = Object.values(extensionCounts);
+      const colors = [
+        '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
+        '#10B981', '#06B6D4', '#8B5CF6', '#F97316', '#84CC16'
+      ];
+
+      extensionsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors.slice(0, labels.length),
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 15,
+                usePointStyle: true,
+                font: {
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // File filtering and management
+    function applyAvailableFilesFilter() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const selectedExtensions = $('#extensionFilter').val() || [];
+      const sortBy = document.getElementById('sortSelect').value;
+      
+      filteredAvailableFiles = availableFiles.filter(file => {
+        const matchesSearch = file.name.toLowerCase().includes(searchTerm);
+        const matchesExtension = selectedExtensions.length === 0 || selectedExtensions.includes(file.extension);
+        return matchesSearch && matchesExtension;
+      });
+      
+      // Sort files
+      filteredAvailableFiles.sort((a, b) => {
+        switch (sortBy) {
+          case 'size':
+            return b.size - a.size;
+          case 'extension':
+            return a.extension.localeCompare(b.extension);
+          case 'name':
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+      
+      currentPage = 1;
+      updateAvailableFilesTable();
+      updateSelectedCount();
+    }
+    
+    function applyDownloadedFilesFilter() {
+      const searchTerm = document.getElementById('downloadedSearchInput').value.toLowerCase();
+      
+      filteredDownloadedFiles = downloadedFiles.filter(file => {
+        const matchesSearch = file.name.toLowerCase().includes(searchTerm);
+        return matchesSearch;
+      });
+      
+      updateDownloadedFilesTable();
+    }
+
+    function updateAvailableFilesTable() {
+      // Update filter options
+      const extensionFilter = document.getElementById('extensionFilter');
+      const extensions = [...new Set(availableFiles.map(f => f.extension))];
+      const currentValue = extensionFilter.value;
+      
+      extensionFilter.innerHTML = '<option value="">All Extensions</option>';
+      extensions.forEach(ext => {
+        const option = document.createElement('option');
+        option.value = ext;
+        option.textContent = ext === 'no extension' ? 'No Extension' : ext.replace('.', '').toUpperCase();
+        extensionFilter.appendChild(option);
+      });
+      extensionFilter.value = currentValue;
+      
+      // Update counts
+      document.getElementById('totalFilesCount').textContent = `${filteredAvailableFiles.length} files total`;
+      
+      // Pagination
+      const totalPages = Math.ceil(filteredAvailableFiles.length / ITEMS_PER_PAGE);
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredAvailableFiles.length);
+      const pageFiles = filteredAvailableFiles.slice(startIndex, endIndex);
+      
+      // Update pagination info
+      document.getElementById('showingStart').textContent = startIndex + 1;
+      document.getElementById('showingEnd').textContent = endIndex;
+      document.getElementById('totalCount').textContent = filteredAvailableFiles.length;
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      
+      // Update pagination buttons
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+      
+      // Render table
+      const tbody = document.getElementById('fileTableBody');
+      tbody.innerHTML = '';
+      
+      pageFiles.forEach((file, index) => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
+        
+        const isPreviewable = file.extension.match(/\.(mp3|mp4|wav|ogg|jpg|jpeg|png|gif)$/i);
+        
+        row.innerHTML = `
+          <td class="px-4 py-4 whitespace-nowrap">
+            <input type="checkbox" class="file-checkbox rounded" 
+                   data-index="${startIndex + index}" 
+                   ${file.selected ? 'checked' : ''}>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+              <i class="${getFileIcon(file.extension)} mr-3 text-sm"></i>
+              <span class="text-sm font-medium text-gray-900 truncate max-w-xs" title="${file.name}">
+                ${file.name}
+              </span>
+              ${isPreviewable ? `
+                <button class="ml-2 text-indigo-600 hover:text-indigo-800" onclick='previewMedia(${JSON.stringify({
+                  name: file.name,
+                  url: file.url,
+                  extension: file.extension
+                }).replace(/'/g, "\\'")})'">
+                  <i class="fas fa-eye"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${formatBytes(file.size)}</td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+              ${file.extension === 'no extension' ? 'No Ext' : file.extension.replace('.', '').toUpperCase()}
+            </span>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <i class="fas fa-check-circle text-green-500 text-sm" title="Ready"></i>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+      
+      // Add event listeners to checkboxes
+      document.querySelectorAll('.file-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          filteredAvailableFiles[index].selected = e.target.checked;
+          updateSelectedCount();
+        });
+      });
+    }
+    
+    function updateDownloadedFilesTable() {
+      // Render table
+      const tbody = document.getElementById('downloadedFilesBody');
+      tbody.innerHTML = '';
+      
+      filteredDownloadedFiles.forEach(file => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
+        
+        const isPreviewable = file.extension.match(/\.(mp3|mp4|wav|ogg|jpg|jpeg|png|gif)$/i);
+        
+        row.innerHTML = `
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+              <i class="${getFileIcon(file.extension)} mr-3 text-sm"></i>
+              <span class="text-sm font-medium text-gray-900 truncate max-w-xs" title="${file.name}">
+                ${file.name}
+              </span>
+              ${isPreviewable ? `
+                <button class="ml-2 text-indigo-600 hover:text-indigo-800" onclick='previewMedia(${JSON.stringify({
+                  name: file.name,
+                  url: '/downloads/' + file.name,
+                  extension: file.extension
+                }).replace(/'/g, "\\'")})'">
+                  <i class="fas fa-eye"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${formatBytes(file.size)}</td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+              ${file.extension === 'no extension' ? 'No Ext' : file.extension.replace('.', '').toUpperCase()}
+            </span>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(file.modified)}</td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <button onclick="deleteFile('${file.name}')" 
+                    class="text-red-600 hover:text-red-900 transition-colors p-1"
+                    title="Delete file">
+              <i class="fas fa-trash text-sm"></i>
+            </button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // File selection functions
+    function selectAllFiles() {
+      filteredAvailableFiles.forEach(file => file.selected = true);
+      document.getElementById('selectAllCheckbox').checked = true;
+      updateAvailableFilesTable();
+      updateSelectedCount();
+    }
+
+    function deselectAllFiles() {
+      filteredAvailableFiles.forEach(file => file.selected = false);
+      document.getElementById('selectAllCheckbox').checked = false;
+      updateAvailableFilesTable();
+      updateSelectedCount();
+    }
+
+    function toggleAllFiles() {
+      const selectAll = document.getElementById('selectAllCheckbox').checked;
+      filteredAvailableFiles.forEach(file => file.selected = selectAll);
+      updateAvailableFilesTable();
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const selected = filteredAvailableFiles.filter(f => f.selected).length;
+      const total = filteredAvailableFiles.length;
+      const selectedSize = filteredAvailableFiles
+        .filter(f => f.selected)
+        .reduce((sum, f) => sum + f.size, 0);
+      
+      document.getElementById('selectedCount').textContent = selected;
+      document.getElementById('selectedSize').textContent = formatBytes(selectedSize);
+      document.getElementById('downloadBtn').disabled = selected === 0;
+      
+      // Update select all checkbox state
+      const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+      if (total === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (selected === total) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+      } else if (selected > 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+      } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      }
+    }
+
+    // Download progress tracking
+    async function checkDownloadProgress() {
+      try {
+        const response = await fetch('/api/download-progress');
+        const progress = await response.json();
+        
+        const container = document.getElementById('progressContainer');
+        const section = document.getElementById('downloadProgress');
+        
+        if (progress.length > 0) {
+          section.classList.remove('hidden');
+          container.innerHTML = '';
+          
+          progress.forEach(download => {
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'mb-4 p-4 bg-gray-50 rounded-lg';
+            progressDiv.innerHTML = `
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700 truncate">
+                  ${download.currentFile || 'Preparing...'}
+                </span>
+                <span class="text-sm text-gray-500">
+                  ${download.completedFiles}/${download.totalFiles} files
+                </span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="progress-bar h-2 rounded-full transition-all duration-300" 
+                     style="width: ${download.progress}%"></div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-gray-500 capitalize">${download.status}</span>
+                <span class="text-xs font-medium text-gray-700">${download.progress}%</span>
+              </div>
+            `;
+            container.appendChild(progressDiv);
+          });
+        } else {
+          section.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('Error checking download progress:', error);
+      }
+    }
+
+    // Live updates
+    function startLiveUpdates() {
+      let updateCount = 0;
+      refreshInterval = setInterval(() => {
+        updateCount++;
+        
+        // Check progress every 2 seconds
+        checkDownloadProgress();
+        
+        // Update dashboard stats less frequently (every 10 seconds)
+        if (updateCount % 5 === 0) {
+          loadDashboardStats();
+        }
+      }, 2000);
+    }
+
+    // Event listeners
+    function setupEventListeners() {
+      // URL form submission
+      document.getElementById('urlForm').addEventListener('submit', handleUrlSubmit);
+      
+      // File selection buttons
+      document.getElementById('selectAllBtn').addEventListener('click', selectAllFiles);
+      document.getElementById('deselectAllBtn').addEventListener('click', deselectAllFiles);
+      document.getElementById('selectAllCheckbox').addEventListener('change', toggleAllFiles);
+      
+      // Download button
+      document.getElementById('downloadBtn').addEventListener('click', downloadSelectedFiles);
+      
+      // Filter changes with debouncing
+      document.getElementById('extensionFilter').addEventListener('change', applyAvailableFilesFilter);
+      document.getElementById('searchInput').addEventListener('input', debounce(applyAvailableFilesFilter, 300));
+      document.getElementById('sortSelect').addEventListener('change', applyAvailableFilesFilter);
+      
+      document.getElementById('downloadedSearchInput').addEventListener('input', debounce(applyDownloadedFilesFilter, 300));
+      
+      // Pagination
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          updateAvailableFilesTable();
+        }
+      });
+      
+      document.getElementById('nextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredAvailableFiles.length / ITEMS_PER_PAGE);
+        if (currentPage < totalPages) {
+          currentPage++;
+          updateAvailableFilesTable();
+        }
+      });
+      
+      // Refresh button
+      document.getElementById('refreshFiles').addEventListener('click', loadDashboardStats);
+      
+      // Setup media player
+      setupMediaPlayer();
+    }
+
+    // Enhanced loading bar functionality
+    function showLoading() {
+      const loadingProgress = document.getElementById('loadingProgress');
+      const bottomProgressBar = document.getElementById('bottomProgressBar');
+      loadingProgress.classList.remove('hidden');
+      bottomProgressBar.classList.add('show');
+      updateProgress(0, 'Initializing...', '');
+    }
+
+    function hideLoading() {
+      const loadingProgress = document.getElementById('loadingProgress');
+      loadingProgress.classList.add('hidden');
+      // Don't hide bottom bar automatically - it will be minimized by user
+    }
+
+    function updateProgress(percent, operation, currentFile = '', stats = '') {
+      const bottomBar = document.getElementById('bottomProgressBar');
+      bottomBar.classList.add('show');
+      
+      document.getElementById('progressFill').style.width = `${percent}%`;
+      document.getElementById('progressPercent').textContent = `${Math.round(percent)}%`;
+      document.getElementById('currentOperation').textContent = operation;
+      document.getElementById('currentFile').textContent = currentFile;
+      document.getElementById('progressStats').textContent = stats;
+      
+      // Auto-hide after completion
+      if (percent === 100) {
+        setTimeout(() => {
+          bottomBar.classList.remove('show');
+        }, 3000);
+      }
+    }
+
+    // Add minimize button functionality
+    document.getElementById('minimizeProgress').addEventListener('click', () => {
+      const bottomProgressBar = document.getElementById('bottomProgressBar');
+      bottomProgressBar.classList.remove('show');
+    });
+
+    // Modify handleUrlSubmit to use new progress
+    async function handleUrlSubmit(e) {
+      e.preventDefault();
+      if (isLoading) return;
+      
+      showLoading();
+      updateProgress(0, 'Fetching metadata...', '');
+      
+      const url = document.getElementById('itemUrl').value.trim();
+      const identifier = extractIdentifier(url);
+      
+      if (!identifier) {
+        showNotification('Invalid Archive.org item URL', 'error');
+        hideLoading();
+        return;
+      }
+
+      isLoading = true;
+      updateLiveStatus('Fetching files...');
+      
+      const fetchBtn = document.getElementById('fetchBtn');
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Fetching...';
+      
+      try {
+        const metadataUrl = `https://archive.org/metadata/${identifier}`;
+        const response = await fetch(metadataUrl);
+        
+        if (!response.ok) throw new Error('Failed to fetch metadata');
+        
+        const data = await response.json();
+        
+        availableFiles = (data.files || [])
+          .filter(f => f.size && f.name)
+          .map((f, index) => ({
+            id: index,
+            name: f.name,
+            size: Number(f.size) || 0,
+            extension: getFileExtension(f.name),
+            url: `https://archive.org/download/${identifier}/${encodeURIComponent(f.name)}`,
+            selected: false
+          }));
+
+        if (availableFiles.length === 0) {
+          showNotification('No files found in this item', 'warning');
+          return;
+        }
+
+        applyAvailableFilesFilter();
+        document.getElementById('fileSelection').classList.remove('hidden');
+        updateLiveStatus('Ready');
+        updateProgress(50, 'Processing files...', '');
+        updateProgress(100, 'Complete', '', `Found ${availableFiles.length} files`);
+      } catch (error) {
+        updateProgress(0, 'Error', error.message);
+        showNotification('Error fetching files: ' + error.message, 'error');
+        updateLiveStatus('Error');
+      } finally {
+        isLoading = false;
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = '<i class="fas fa-search mr-2"></i>Fetch Files';
+        hideLoading();
+      }
+    }
+
+    function extractIdentifier(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname === "archive.org" && u.pathname.startsWith("/details/")) {
+          return u.pathname.split('/')[2];
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    function getFileExtension(filename) {
+      const ext = filename.toLowerCase().match(/\.[^.]+$/);
+      return ext ? ext[0] : 'no extension';
+    }
+
+    async function downloadSelectedFiles() {
+      const selectedFiles = filteredAvailableFiles.filter(f => f.selected);
+      
+      if (selectedFiles.length === 0) return;
+
+      showLoading();
+      updateProgress(0, 'Starting download...', '', `0/${selectedFiles.length} files`);
+
+      try {
+        const response = await fetch('/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: selectedFiles })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          updateProgress(100, 'Download complete', '', `${selectedFiles.length}/${selectedFiles.length} files`);
+          showNotification(`Successfully downloaded ${selectedFiles.length} files`, 'success');
+          updateLiveStatus('Ready');
+          
+          availableFiles.forEach(f => f.selected = false);
+          applyAvailableFilesFilter();
+          
+          setTimeout(loadDashboardStats, 1000);
+        } else {
+          updateProgress(0, 'Download failed', result.message);
+          showNotification(`Download failed: ${result.message}`, 'error');
+          updateLiveStatus('Error');
+        }
+      } catch (error) {
+        updateProgress(0, 'Download error', error.message);
+        showNotification(`Download error: ${error.message}`, 'error');
+        updateLiveStatus('Error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function deleteFile(filename) {
+      if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+      showLoading();
+      updateProgress(0, 'Deleting file...', filename);
+
+      try {
+        const response = await fetch(`/api/files/${encodeURIComponent(filename)}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          updateProgress(100, 'File deleted', filename);
+          showNotification('File deleted successfully', 'success');
+          loadDashboardStats();
+        } else {
+          updateProgress(0, 'Delete failed', filename);
+          showNotification('Failed to delete file', 'error');
+        }
+      } catch (error) {
+        updateProgress(0, 'Delete error', filename);
+        showNotification('Error deleting file', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function updateLiveStatus(status) {
+      document.getElementById('liveStatus').textContent = status;
+    }
+
+    function showNotification(message, type = 'info') {
+      // Prevent notification spam
+      const existingNotifications = document.querySelectorAll('.notification');
+      if (existingNotifications.length > 3) {
+        existingNotifications[0].remove();
+      }
+      
+      const notification = document.createElement('div');
+      notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full max-w-sm`;
+      
+      const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        warning: 'bg-yellow-500 text-white',
+        info: 'bg-blue-500 text-white'
+      };
+      
+      notification.className += ` ${colors[type]}`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+          <span class="text-sm">${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      requestAnimationFrame(() => {
+        notification.classList.remove('translate-x-full');
+      });
+      
+      // Remove after 5 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 5000);
+    }
+
+    // Initialize Select2 for multiselect dropdowns
+    $(document).ready(function() {
+      $('.select2-multiple').select2({
+        placeholder: "Select extensions",
+        allowClear: true,
+        tags: true
+      });
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    });
+
+    // Media player functionality
+    let currentMediaFile = null;
+
+    function setupMediaPlayer() {
+      const mediaPlayer = document.getElementById('mediaPlayer');
+      const mediaPlayerToggle = document.getElementById('mediaPlayerToggle');
+      const closeMediaPlayer = document.getElementById('closeMediaPlayer');
+      const mediaContent = document.getElementById('mediaContent');
+      const mediaTitle = document.getElementById('mediaTitle');
+      
+      mediaPlayerToggle.addEventListener('click', () => {
+        mediaPlayer.classList.toggle('show');
+      });
+      
+      closeMediaPlayer.addEventListener('click', () => {
+        mediaPlayer.classList.remove('show');
+        mediaContent.innerHTML = '';
+        currentMediaFile = null;
+      });
+    }
+
+    function previewMedia(file) {
+      const mediaPlayer = document.getElementById('mediaPlayer');
+      const mediaContent = document.getElementById('mediaContent');
+      const mediaTitle = document.getElementById('mediaTitle');
+      const typeIcon = document.querySelector('.media-type-icon i');
+      
+      if (currentMediaFile === file.url) {
+        mediaPlayer.classList.remove('show');
+        mediaContent.innerHTML = '';
+        currentMediaFile = null;
+        return;
+      }
+      
+      // Clear previous content
+      mediaContent.innerHTML = '';
+      
+      // Set title
+      mediaTitle.textContent = file.name;
+      
+      // Create appropriate element based on file type
+      let mediaElement;
+      const fileType = file.extension.toLowerCase();
+      
+      if (fileType.match(/\.(jpg|jpeg|png|gif)$/)) {
+        mediaElement = document.createElement('img');
+        mediaElement.src = file.url;
+        mediaElement.style.maxWidth = '100%';
+        mediaElement.style.maxHeight = '100%';
+        mediaElement.style.objectFit = 'contain';
+        typeIcon.className = 'fas fa-image';
+      } else if (fileType.match(/\.(mp4|webm|ogg)$/)) {
+        mediaElement = document.createElement('video');
+        mediaElement.src = file.url;
+        mediaElement.controls = true;
+        mediaElement.autoplay = false;
+        mediaElement.style.width = '100%';
+        mediaElement.style.maxHeight = '100%';
+        typeIcon.className = 'fas fa-video';
+      } else if (fileType.match(/\.(mp3|wav)$/)) {
+        mediaElement = document.createElement('audio');
+        mediaElement.src = file.url;
+        mediaElement.controls = true;
+        mediaElement.autoplay = false;
+        mediaElement.style.width = '100%';
+        mediaElement.style.margin = '20px';
+        typeIcon.className = 'fas fa-music';
+      } else {
+        // Unsupported file type
+        mediaContent.innerHTML = `
+          <div class="text-center text-gray-500 p-4">
+            <i class="fas fa-file-alt text-4xl mb-2"></i>
+            <p>Preview not available for this file type</p>
+          </div>
+        `;
+        typeIcon.className = 'fas fa-file';
+        currentMediaFile = file.url;
+        mediaPlayer.classList.add('show');
+        return;
+      }
+      
+      // Add error handling
+      mediaElement.onerror = () => {
+        mediaContent.innerHTML = `
+          <div class="text-center text-gray-500 p-4">
+            <i class="fas fa-exclamation-circle text-4xl mb-2"></i>
+            <p>Failed to load media</p>
+            <p class="text-sm mt-2">Error: ${mediaElement.error?.message || 'Unknown error'}</p>
+          </div>
+        `;
+      };
+      
+      // Add loading indicator
+      mediaContent.innerHTML = `
+        <div class="text-center text-purple-500 p-4">
+          <i class="fas fa-spinner fa-spin text-4xl"></i>
+          <p class="mt-2">Loading...</p>
+        </div>
+      `;
+      
+      // When media is loaded, replace loading indicator
+      mediaElement.onload = mediaElement.onloadeddata = () => {
+        mediaContent.innerHTML = '';
+        mediaContent.appendChild(mediaElement);
+      };
+      
+      // Add CORS headers for Archive.org URLs
+      mediaElement.crossOrigin = 'anonymous';
+      
+      // Set source after setting up event handlers
+      mediaElement.src = file.url;
+      
+      currentMediaFile = file.url;
+      mediaPlayer.classList.add('show');
+    }
+  </script>
+</body>
+</html>
