@@ -379,24 +379,24 @@
           <div class="flex gap-4">
             <div class="flex-1 relative">
               <i class="fas fa-link absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-              <input
-                type="url"
-                id="itemUrl"
-                placeholder="https://archive.org/details/your-item-identifier"
-                required
+    <input
+      type="url"
+      id="itemUrl"
+      placeholder="https://archive.org/details/your-item-identifier"
+      required
                 class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              />
+    />
             </div>
-            <button
-              type="submit"
+    <button
+      type="submit"
               class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-xl"
               id="fetchBtn"
-            >
+    >
               <i class="fas fa-search mr-2"></i>Fetch Files
-            </button>
+    </button>
           </div>
         </div>
-      </form>
+  </form>
     </div>
 
     <!-- Loading Progress Bar -->
@@ -553,7 +553,7 @@
       </div>
       <button id="closeMediaPlayer" class="text-gray-500 hover:text-gray-700">
         <i class="fas fa-times"></i>
-      </button>
+    </button>
     </div>
     <div class="media-player-content" id="mediaContent">
       <!-- Content will be dynamically inserted here -->
@@ -1346,7 +1346,7 @@
         currentMediaFile = null;
         return;
       }
-      
+
       // Clear previous content
       mediaContent.innerHTML = '';
       
@@ -1391,9 +1391,9 @@
         typeIcon.className = 'fas fa-file';
         currentMediaFile = file.url;
         mediaPlayer.classList.add('show');
-        return;
-      }
-      
+          return;
+        }
+
       // Add error handling
       mediaElement.onerror = () => {
         mediaContent.innerHTML = `
